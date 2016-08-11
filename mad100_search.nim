@@ -11,14 +11,14 @@
 from mad100
    import Position, parse_move, newPos, key, domove, rotate, eval_move, INITIAL_EXT
 from mad100_utils
-   import Move, new, null, isNull, rjust, MAX_NODES, WHITE, BLACK
+   import Move, null, isNull, rjust, MAX_NODES, WHITE, BLACK
 from mad100_moves
    import matchMove, genMoves, hasCapture
 
 import tables
 import algorithm  # for sorting
 from math import randomize, random
-from sequtils import mapIt
+from sequtils import mapIt, apply
 from strutils import intToStr, split
 import os    # reading file
 import pegs  # regular expression
@@ -105,8 +105,10 @@ proc bound(pos: Position, gamma: int, depth: int): int =
    var best = -MATE_VALUE
    var bmove = Move.null
 
+   # Get moveList and sort it for faster result
    var moveList = genMoves(pos.board)
-   moveList.sort(proc (m1,m2: Move): int = cmp(pos.eval_move(m1), pos.eval_move(m2)), Descending)
+   moveList.apply(proc(m: Move): Move =  m.eval = pos.eval_move(m); return m )
+   moveList.sort(proc (m1,m2: Move): int = cmp(m1.eval, m2.eval), Descending)
 
    for move in moveList:
       # Iterate over the sorted generator
@@ -351,8 +353,11 @@ proc alphabeta(pos: Position, alpha: int, beta: int, depthleft: int, player: int
 
    var bestValue: int
    var bestMove: Move
+
+   # Get moveList and sort it for faster result
    var moveList = genMoves(pos.board)
-   moveList.sort(proc (m1,m2: Move): int = cmp(pos.eval_move(m1), pos.eval_move(m2)), Descending)
+   moveList.apply(proc(m: Move): Move =  m.eval = pos.eval_move(m); return m )
+   moveList.sort(proc (m1,m2: Move): int = cmp(m1.eval, m2.eval), Descending)
 
    if player == 0:
       # Evaluate or search further until end-leaves has no capture(s) (QUIESCENCE SEARCH)
