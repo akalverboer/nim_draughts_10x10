@@ -10,70 +10,73 @@
 ###   Tables give for each square the next square depending on a direction (NE, NW, SE, SW)
 #]#
 
-from strutils import split, parseInt, isUpper, isLower, intToStr
-from sequtils import mapIt, filterIt
+from strutils import split, isUpper, isLower, intToStr
+from sequtils import filterIt
 from tables import initTable,len ,add, hasKey, Table, keys, del, `[]`
 import sets      # using toSet; error if "from sets import toSet"
 
-from mad100_utils import Move, new, null, isNull, seqToStr
+from mad100_utils import Move, null, isNull, seqToStr
 
-
-const NE_ext =
-    "   00  00  00  00  00  "  &  #  01 - 05
-    " 01  02  03  04  05    "  &  #  06 - 10
-    "   07  08  09  10  00  "  &  #  11 - 15
-    " 11  12  13  14  15    "  &  #  16 - 20
-    "   17  18  19  20  00  "  &  #  21 - 25
-    " 21  22  23  24  25    "  &  #  26 - 30
-    "   27  28  29  30  00  "  &  #  31 - 35
-    " 31  32  33  34  35    "  &  #  36 - 40
-    "   37  38  39  40  00  "  &  #  41 - 45
-    " 41  42  43  44  45    "     #  46 - 50
-
-const NW_ext =
-   "   00  00  00  00  00   "  &  # 01 - 05
-   " 00  01  02  03  04     "  &  # 06 - 10
-   "   06  07  08  09  10   "  &  # 11 - 15
-   " 00  11  12  13  14     "  &  # 16 - 20
-   "   16  17  18  19  20   "  &  # 21 - 25
-   " 00  21  22  23  24     "  &  # 26 - 30
-   "   26  27  28  29  30   "  &  # 31 - 35
-   " 00  31  32  33  34     "  &  # 36 - 40
-   "   36  37  38  39  40   "  &  # 41 - 45
-   " 00  41  42  43  44     "     # 46 - 50
-
-const SE_ext =
-   "   07  08  09  10  00   "  &  # 01 - 05
-   " 11  12  13  14  15     "  &  # 06 - 10
-   "   17  18  19  20  00   "  &  # 11 - 15
-   " 21  22  23  24  25     "  &  # 16 - 20
-   "   27  28  29  30  00   "  &  # 21 - 25
-   " 31  32  33  34  35     "  &  # 26 - 30
-   "   37  38  39  40  00   "  &  # 31 - 35
-   " 41  42  43  44  45     "  &  # 36 - 40
-   "   47  48  49  50  00   "  &  # 41 - 45
-   " 00  00  00  00  00     "     # 46 - 50
-
-const SW_ext =
-   "   06  07  08  09  10   "  &  # 01 - 05
-   " 00  11  12  13  14     "  &  # 06 - 10
-   "   16  17  18  19  20   "  &  # 11 - 15
-   " 00  21  22  23  24     "  &  # 16 - 20
-   "   26  27  28  29  30   "  &  # 21 - 25
-   " 00  31  32  33  34     "  &  # 26 - 30
-   "   36  37  38  39  40   "  &  # 31 - 35
-   " 00  41  42  43  44     "  &  # 36 - 40
-   "   46  47  48  49  50   "  &  # 41 - 45
-   " 00  00  00  00  00     "     # 46 - 50
-
-# Directions: internal representation is an array of square numbers.
+# Directions: four constant arrays of square numbers.
 # For example, first square from i in direction NE is NE[i]
-const NE: seq[int] = @[0] & NE_ext.split.mapIt(parseInt(it)) & @[0]
-const NW: seq[int] = @[0] & NW_ext.split.mapIt(parseInt(it)) & @[0]
-const SE: seq[int] = @[0] & SE_ext.split.mapIt(parseInt(it)) & @[0]
-const SW: seq[int] = @[0] & SW_ext.split.mapIt(parseInt(it)) & @[0]
 
-iterator diagonal(i: int, d: seq[int]): int =
+const NE: array[52, int] =
+     [0,                          # 0 at start
+        00, 00, 00, 00, 00,       #  01 - 05
+      01, 02, 03, 04, 05,         #  06 - 10
+        07, 08, 09, 10, 00,       #  11 - 15
+      11, 12, 13, 14, 15,         #  16 - 20
+        17, 18, 19, 20, 00,       #  21 - 25
+      21, 22, 23, 24, 25,         #  26 - 30
+        27, 28, 29, 30, 00,       #  31 - 35
+      31, 32, 33, 34, 35,         #  36 - 40
+        37, 38, 39, 40, 00,       #  41 - 45
+      41, 42, 43, 44, 45,         #  46 - 50
+     0]                           # 0 at end
+
+const NW: array[52, int] =
+     [0,                          # 0 at start
+       00, 00, 00, 00, 00,        # 01 - 05
+     00, 01, 02, 03, 04,          # 06 - 10
+       06, 07, 08, 09, 10,        # 11 - 15
+     00, 11, 12, 13, 14,          # 16 - 20
+       16, 17, 18, 19, 20,        # 21 - 25
+     00, 21, 22, 23, 24,          # 26 - 30
+       26, 27, 28, 29, 30,        # 31 - 35
+     00, 31, 32, 33, 34,          # 36 - 40
+       36, 37, 38, 39, 40,        # 41 - 45
+     00, 41, 42, 43, 44,          # 46 - 50
+     0]                           # 0 at end
+
+const SE: array[52, int] =
+     [0,                          # 0 at start
+       07, 08, 09, 10, 00,        # 01 - 05
+     11, 12, 13, 14, 15,          # 06 - 10
+       17, 18, 19, 20, 00,        # 11 - 15
+     21, 22, 23, 24, 25,          # 16 - 20
+       27, 28, 29, 30, 00,        # 21 - 25
+     31, 32, 33, 34, 35,          # 26 - 30
+       37, 38, 39, 40, 00,        # 31 - 35
+     41, 42, 43, 44, 45,          # 36 - 40
+       47, 48, 49, 50, 00,        # 41 - 45
+     00, 00, 00, 00, 00,          # 46 - 50
+     0]                           # 0 at end
+
+const SW: array[52, int] =
+     [0,                          # 0 at start
+       06, 07, 08, 09, 10,        # 01 - 05
+     00, 11, 12, 13, 14,          # 06 - 10
+       16, 17, 18, 19, 20,        # 11 - 15
+     00, 21, 22, 23, 24,          # 16 - 20
+       26, 27, 28, 29, 30,        # 21 - 25
+     00, 31, 32, 33, 34,          # 26 - 30
+       36, 37, 38, 39, 40,        # 31 - 35
+     00, 41, 42, 43, 44,          # 36 - 40
+       46, 47, 48, 49, 50,        # 41 - 45
+     00, 00, 00, 00, 00,          # 46 - 50
+     0]                           # 0 at end
+
+iterator diagonal(i: int, d: openarray[int]): int =
    # Generator for squares from i in direction d
    var nxt = i
    var stop = (d[nxt] == 0)
@@ -91,9 +94,10 @@ const Directions = [NE, SE, SW, NW]
 var moveTable = initTable[string, seq[Move]]()
 const TABLE_SIZE = 1000000
 
-proc boardKey(board: seq[char]): string =
+proc boardKey(board: openarray[char]): string =
    # Define a good hash key for moveTable
-   let key: string = board.seqToStr
+   var key: string = ""
+   for c in board: key = key & c
    return key
 # end boardKey
 
@@ -117,9 +121,9 @@ proc moveTableSize*(): int =    # PUBLIC
 # end moveTableSize
 #--------------------------------------------------------------------
 
-proc bmoves_from_square*(board: seq[char], i: int): seq[Move] =
+proc bmoves_from_square*(board: openarray[char], i: int): seq[Move] =
    # List of moves (non-captures) for square i
-   var moves: seq[Move] = @[]     # init output list
+   var moves: seq[Move] = @[]     # init output list; two moves
    let p = board[i]
 
    if not p.isUpper: return moves    # only moves for player; return empty sequence
@@ -131,7 +135,7 @@ proc bmoves_from_square*(board: seq[char], i: int): seq[Move] =
          if q == '0' or q.isUpper: continue   # direction empty or own piece; try next direction
          if (q == '.') and (d[i] == NE[i] or d[i] == NW[i]):
             # move detected; save and continue
-            moves.add Move.new(@[i, d[i] ], @[])
+            moves.add Move(steps: @[i, d[i] ], takes: @[], eval: 0)
 
    if p == 'K':
       for id in 0..3:
@@ -143,13 +147,13 @@ proc bmoves_from_square*(board: seq[char], i: int): seq[Move] =
             if q != '.': break     # stop this direction if next square not empty
             if q == '.':
                # move detected; save and continue
-               moves.add Move.new(@[i,j], @[])
+               moves.add Move(steps: @[i,j], takes: @[], eval: 0)
 
    return moves
 # end bmoves_from_square ======================================
 
 
-proc bcaptures_from_square(board: seq[char], i: int): seq[Move] =
+proc bcaptures_from_square(board: openarray[char], i: int): seq[Move] =
    # List of one-take captures for square i
    var captures: seq[Move] = @[]     # init output list
    let p = board[i]
@@ -171,7 +175,7 @@ proc bcaptures_from_square(board: seq[char], i: int): seq[Move] =
             if r == '0': continue     # no second diagonal square; try next direction
             if r == '.':
                # capture detected; save and continue
-               captures.add Move.new(@[ i, d[d[i]] ], @[ d[i] ])
+               captures.add Move(steps: @[ i, d[d[i]] ], takes: @[ d[i] ], eval: 0)
 
    if p == 'K':
       for id in 0..3:
@@ -188,47 +192,50 @@ proc bcaptures_from_square(board: seq[char], i: int): seq[Move] =
             if q.isLower and take != 0: break
             if q == '.' and take != 0:
                # capture detected; save and continue
-               captures.add Move.new(@[i,j], @[take])
+               captures.add Move(steps: @[i,j], takes: @[take], eval: 0)
+
 
    return captures
 # end bcaptures_from_square ======================================
 
 
-proc basicMoves(board: seq[char]): seq[Move] =
-   # Return list of basic moves of board; either captures or normal moves
-   # Basic moves are normal moves or one-take captures
+proc basicMoves(board: openarray[char]): seq[Move] =
+   # Return list of basic moves of board; basic moves are normal moves (not captures)
    var bmoves_of_board: seq[Move] = @[]
-   var bcaptures_of_board: seq[Move] = @[]
-   var hasCap: bool = false
 
    for i, p in board:
       if not p.isUpper: continue    # Upper: p == 'P' or p == 'K'
-      let bcaptures = bcaptures_from_square(board, i)
-      if bcaptures.len > 0: hasCap = true
-      if hasCap:
-         bcaptures_of_board = bcaptures_of_board & bcaptures
-      else:
-         bmoves_of_board = bmoves_of_board & bmoves_from_square(board, i)
+      bmoves_of_board = bmoves_of_board & bmoves_from_square(board, i)
 
-   if bcaptures_of_board.len > 0:
-      return bcaptures_of_board
-   else:
-      return bmoves_of_board
+   return bmoves_of_board
 # end basicMoves
 
+proc basicCaptures(board: openarray[char]): seq[Move] =
+   # Return list of basic captures of board. Basic captures are one-take captures
+   var bcaptures_of_board: seq[Move] = @[]
 
-proc searchCaptures(board: seq[char]): seq[Move] =
+   for i, p in board:
+      if not p.isUpper: continue    # Upper: p == 'P' or p == 'K'
+      bcaptures_of_board = bcaptures_of_board & bcaptures_from_square(board, i)
+
+   return bcaptures_of_board
+# end basicCaptures
+
+
+
+proc searchCaptures(board: array[52, char]): seq[Move] =
    # Capture construction by extending incomplete captures with basic captures
    var captures: seq[Move] = @[]       # result list of captures
    var max_takes: int = 0              # max number of taken pieces
 
-   proc boundCaptures(board: seq[char], capture: Move, depth: int ): void =
+   proc boundCaptures(board: array[52, char], capture: Move, depth: int ): void =
       # Recursive construction of captures. Update globals: captures and max_takes
       # - board: current board during capture construction
       # - capture: incomplete capture used to extend with basic captures
       # - depth: not used
       # Return value not used
-      let bcaptures = bcaptures_from_square(board, capture.steps[capture.steps.high])   # new extends of capture
+      let from_square = capture.steps[capture.steps.high]
+      let bcaptures = bcaptures_from_square(board, from_square)   # new extends of capture
 
       var completed: bool = true
       for bcapture in bcaptures:
@@ -241,7 +248,7 @@ proc searchCaptures(board: seq[char]): seq[Move] =
          new_board[n_from] = '.'
          new_board[n_to] = board[n_from]
 
-         var new_capture = Move.new(capture.steps, capture.takes)  # make copy of move and extend it
+         var new_capture = Move(steps: capture.steps, takes: capture.takes, eval: 0)  # make copy of move and extend it
          new_capture.steps.add  bcapture.steps[1]
          new_capture.takes.add  bcapture.takes[0]
 
@@ -258,9 +265,9 @@ proc searchCaptures(board: seq[char]): seq[Move] =
 
    # -----------------------------------------------------------------------------
    let depth = 0
-   let bmoves = basicMoves(board)
-   for bmove in bmoves:
-      if bmove.takes.len == 0: break    # only moves, no captures; nothing to extend
+   ###let bmoves = basicCaptures(board)
+   for bmove in basicCaptures(board):
+      # TO DO: RENAME bmove to bcapture
       let n_from = bmove.steps[0]
       let n_to = bmove.steps[bmove.steps.high]     # last step
 
@@ -273,7 +280,7 @@ proc searchCaptures(board: seq[char]): seq[Move] =
 # end searchCaptures
 
 
-proc hasCapture*(board: seq[char]): bool =          # PUBLIC
+proc hasCapture*(board: openarray[char]): bool =          # PUBLIC
    # Returns true if capture at board found for white else false.
    for i, p in board:
       if p.isUpper:    # Upper: p == 'P' or p == 'K'
@@ -283,7 +290,7 @@ proc hasCapture*(board: seq[char]): bool =          # PUBLIC
 # end hasCapture
 
 
-proc genMoves*(board: seq[char]): seq[Move] =         # PUBLIC
+proc genMoves*(board: array[52, char]): seq[Move] =         # PUBLIC
    # Returns list of all legal moves of a board for player white (capital letters).
    # Move is a named tuple with array of steps and array of takes
 
@@ -294,9 +301,8 @@ proc genMoves*(board: seq[char]): seq[Move] =         # PUBLIC
       return entry
 
    var legalMoves: seq[Move] = @[]
-   if hasCapture(board):
-      legalMoves = searchCaptures(board)
-   else:
+   legalMoves = searchCaptures(board)
+   if legalMoves.len == 0:
       legalMoves = basicMoves(board)
 
    # Update the moveTable so we need not compute legal moves for this board twice
@@ -313,7 +319,7 @@ proc genMoves*(board: seq[char]): seq[Move] =         # PUBLIC
 # end genMoves
 
 
-proc isLegal*(board: seq[char], move: Move): bool =        # PUBLIC
+proc isLegal*(board: array[52, char], move: Move): bool =        # PUBLIC
    # Returns true if move for position is legal else false.
    let legal_moves = genMoves(board)
    if move in legal_moves:
@@ -323,7 +329,7 @@ proc isLegal*(board: seq[char], move: Move): bool =        # PUBLIC
 # isLegal ============================================
 
 
-proc matchMove*(board: seq[char], steps: seq[int]): Move =        # PUBLIC
+proc matchMove*(board: array[52, char], steps: seq[int]): Move =        # PUBLIC
    # Match array of steps with a legal move. Return matched move or nilMove
 
    var lmoves = genMoves(board)   # legal moves
