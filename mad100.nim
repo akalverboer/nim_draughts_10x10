@@ -13,6 +13,7 @@
 ###=====================================================================================
 #]#
 
+from algorithm import reverse, fill
 from strutils
    import split, parseInt, join, toUpper, isUpper,
           replace, intToStr, repeat, spaces
@@ -81,32 +82,36 @@ const INITIAL_EXT_PROBLEM1* =
 # Because of symmetry the PST is only given for white (uppercase letter)
 # Material value for one piece is 1000.
 
-const pst_ext = {
-  'P':  "    000   000   000   000   000 "    & #  01 - 05   PIECE promotion line
-        " 045   050   055   050   045    "    & #  06 - 10
-        "    040   045   050   045   040 "    & #  11 - 15
-        " 035   040   045   040   035    "    & #  16 - 20
-        "    025   030   030   025   030 "    & #  21 - 25   Small threshold to prevent to optimistic behaviour
-        " 025   030   035   030   025    "    & #  26 - 30
-        "    020   025   030   020   025 "    & #  31 - 35
-        " 020   015   025   020   015    "    & #  36 - 40
-        "    010   015   020   010   015 "    & #  41 - 45
-        " 005   010   015   010   005    ",     #  46 - 50
-  'K':  "    050   050   050   050   050 "    & #  01 - 05
-        " 050   050   050   050   050    "    & #  06 - 10
-        "    050   050   050   050   050 "    & #  11 - 15
-        " 050   050   050   050   050    "    & #  16 - 20
-        "    050   050   050   050   050 "    & #  21 - 25
-        " 050   050   050   050   050    "    & #  26 - 30
-        "    050   050   050   050   050 "    & #  31 - 35
-        " 050   050   050   050   050    "    & #  36 - 40
-        "    050   050   050   050   050 "    & #  41 - 45
-        " 050   050   050   050   050    "      #  46 - 50
-}.toTable
+#const PST_PP: array[52, int] =   # much slower !!
+const PST_P: seq[int] =
+    @[0,                                    # 0 at start
+         000,  000,  000,  000,  000,       #  01 - 05   PIECE promotion line
+      045,  050,  055,  050,  045,          #  06 - 10
+         040,  045,  050,  045,  040,       #  11 - 15
+      035,  040,  045,  040,  035,          #  16 - 20
+         025,  030,  030,  025,  030,       #  21 - 25   Small threshold to prevent to optimistic behaviour
+      025,  030,  035,  030,  025,          #  26 - 30
+         020,  015,  025,  020,  025,       #  31 - 35
+      020,  015,  025,  020,  015,          #  36 - 40
+         010,  015,  025,  020,  015,       #  41 - 45
+      005,  010,  015,  010,  005,          #  46 - 50
+      0]                                    # 0 at end
 
-# Internal representation of PST with zeros at begin and end (rotation-symmetry)
-const PST_P: seq[int] = @[0] & pst_ext['P'].split.mapIt(parseInt(it)) & @[0]
-const PST_K: seq[int] = @[0] & pst_ext['K'].split.mapIt(parseInt(it)) & @[0]
+#const PST_KK: array[52, int] =    # much slower !!
+const PST_K: seq[int] =
+    @[0,                                    # 0 at start
+         050,  050,  050,  050,  050,       #  01 - 05
+      050,  050,  050,  050,  050,          #  06 - 10
+         050,  050,  050,  050,  050,       #  11 - 15
+      050,  050,  050,  050,  050,          #  16 - 20
+         050,  050,  050,  050,  050,       #  21 - 25
+      050,  050,  050,  050,  050,          #  26 - 30
+         050,  050,  050,  050,  050,       #  31 - 35
+      050,  050,  050,  050,  050,          #  36 - 40
+         050,  050,  050,  050,  050,       #  41 - 45
+      050,  050,  050,  050,  050,          #  46 - 50
+      0]                                    # 0 at end
+
 const PST = {'P': PST_P , 'K': PST_K}.toTable
 const PMAT = {'P': 1000, 'K': 3000}.toTable
 
@@ -117,29 +122,30 @@ const PMAT = {'P': 1000, 'K': 3000}.toTable
 type
    Position* = ref object of RootObj
       # A state of a draughts100 game
-      # - board: sequence of 52 char; filled with 'p', 'P', 'k', 'K', '.' and '0'
+      # - board: array of 52 char; filled with 'p', 'P', 'k', 'K', '.' and '0'
       #   first and last index unused ('0') rotation-symmetry
       # - score: the board evaluation
       #
-      board*: seq[char]    # length 52 char
+      board*: array[52,char]
       score*: int
 
 
 proc key*(pos: Position): string {.inline.} =
-   # Define a good hash key
-   var posKey: string = pos.board.seqToStr
+   # Define a good hash key; conver to string
+   var posKey: string = ""
+   for c in pos.board: posKey = posKey & c
    return posKey
 
-proc rotateBoard(board: seq[char]): seq[char] =
+proc rotateBoard(board: array[52, char]): array[52, char] =
    # Create new position with reversed board and items swapped.
-   var rotBoard = newSeq[char](board.len)
-   for i, c in board:
-      rotBoard[board.high - i] = c.swapcase
+   var rotBoard: array[52,char] = board   # copy
+   rotBoard.reverse
+   for i, c in rotBoard: rotBoard[i] = c.swapcase
    return rotBoard
 
 proc rotate*(pos: Position): Position  {.inline.} =
    # Create new position with reversed board and items swapped; reverse the score
-   let rotBoard: seq[char] = pos.board.rotateBoard
+   let rotBoard = pos.board.rotateBoard
    return Position(board: rotBoard, score: -1 * pos.score)
 
 proc clone*(pos: Position): Position  {.inline.} =
@@ -179,7 +185,7 @@ proc eval_pos*(pos: Position): int  {.inline.} =
       if p.isUpper:         # p == 'P' or p == 'K'
          score1 = score1 + PMAT[p] + PST[p][i]
 
-   let rotBoard: seq[char] = pos.board.rotateBoard   # we want score of opponent
+   let rotBoard = pos.board.rotateBoard   # we want score of opponent
    var score2: int = 0
    for i, p in rotBoard:
       if p.isUpper:         # p == 'P' or p == 'K'
@@ -191,7 +197,7 @@ proc eval_pos*(pos: Position): int  {.inline.} =
 
 
 proc domove*(pos: Position, move: Move): Position =
-   # Move is named tuple with list of steps and list of takes
+   # Move is object with list of steps and list of takes
    # Returns new rotated position object after moving.
    # Calculates the score of the returned position.
    # Remember: move is always done with white
@@ -233,7 +239,12 @@ proc domove*(pos: Position, move: Move): Position =
 
 proc newPos*(iBoard: string): Position  {.inline.} =
    # Return position object based on external representation of board (string)
-   let board = @['0'] & iBoard.replace(" ","").toSeq & @['0']
+   var board: array[52, char]
+   var sq = newSeq[char](50)
+   sq = iBoard.replace(" ","").toSeq
+   board[0] = '0'
+   board[51] = '0'
+   for i, p in sq: board[i+1] = p
    let pos = Position(board: board, score: 0)
    pos.score = pos.eval_pos
    return pos
