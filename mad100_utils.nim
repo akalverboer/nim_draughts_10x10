@@ -18,19 +18,14 @@ const BLACK* = 1
 #======================================================================
 # Type definition: Move
 #======================================================================
-type
-   Move* = tuple[ steps: seq[int], takes: seq[int] ]
 
-proc new*(Move: typedesc, steps: seq[int], takes: seq[int] ): Move =
-   ## Create new Move tuple
-   ## Example: Move.new(@[32,23], @[28])
-   var res: Move   # new tuple
-   res.steps = steps
-   res.takes = takes
-   return res
+type Move* = ref object of RootObj
+   steps*: seq[int]
+   takes*: seq[int]
+   eval*: int
 
 proc null*(Move: typedesc): Move =
-   return (steps: @[], takes: @[])
+   return Move(steps: @[], takes: @[], eval: 0)
 
 proc isNull*(move: Move): bool =
    ## Test if variable of type Move has its default initial value
