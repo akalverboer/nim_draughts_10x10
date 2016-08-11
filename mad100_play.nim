@@ -17,7 +17,7 @@ from mad100_search
 from mad100
    import Position, clone, key, eval_pos, rotate, parse_move, render_move, print_pos
 from mad100_utils
-   import mapIt, Move, new, null, isNull, WHITE, BLACK
+   import mapIt, Move, null, isNull, WHITE, BLACK
 
 
 # FEN examples
@@ -80,7 +80,12 @@ proc parseFEN*(iFen: string): Position =
 
    # prepare output
    let pcode = {'w' : 'P', 'W' : 'K', 'b' : 'p', 'B' : 'k', '0' : '.'}.toTable
-   let board = @['0'] &  rlist[1..rlist.high].mapIt(pcode[it]).toSeq  & @['0']
+   var board: array[52, char]
+   var sq = newSeq[char](50)
+   sq = rlist[1..rlist.high].mapIt(pcode[it]).toSeq
+   board[0] = '0'
+   board[51] = '0'
+   for i, p in sq: board[i+1] = p
 
    var pos = Position(board: board, score: 0)   # module 'mad100'
    pos.score = pos.eval_pos()
@@ -94,7 +99,7 @@ proc mrender_move*(color: int, move: Move): string =
 
    let steps = if color == WHITE: move.steps else: move.steps.mapIt(51-it)
    let takes = if color == WHITE: move.takes else: move.takes.mapIt(51-it)
-   let rmove = Move.new(steps, takes)
+   let rmove = Move(steps: steps, takes: takes, eval: 0)
    return render_move(rmove)           # module 'mad100'
 
 proc mparse_move*(color: int, move: string): seq[int] =
