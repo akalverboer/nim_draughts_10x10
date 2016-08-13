@@ -265,16 +265,14 @@ proc searchCaptures(board: array[52, char]): seq[Move] =
 
    # -----------------------------------------------------------------------------
    let depth = 0
-   ###let bmoves = basicCaptures(board)
-   for bmove in basicCaptures(board):
-      # TO DO: RENAME bmove to bcapture
-      let n_from = bmove.steps[0]
-      let n_to = bmove.steps[bmove.steps.high]     # last step
+   for bcapture in basicCaptures(board):
+      let n_from = bcapture.steps[0]
+      let n_to = bcapture.steps[bcapture.steps.high]     # last step
 
       var new_board = board   # clone the board and do the capture without taking pieces
       new_board[n_from] = '.'
       new_board[n_to] = board[n_from]
-      boundCaptures(new_board, bmove, depth)   # Search for captures
+      boundCaptures(new_board, bcapture, depth)   # Search for captures
 
    result = captures.filterIt(it.takes.len == max_takes)
 # end searchCaptures
