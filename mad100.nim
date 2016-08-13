@@ -82,14 +82,13 @@ const INITIAL_EXT_PROBLEM1* =
 # Because of symmetry the PST is only given for white (uppercase letter)
 # Material value for one piece is 1000.
 
-#const PST_PP: array[52, int] =   # much slower !!
-const PST_P: seq[int] =
-    @[0,                                    # 0 at start
-         000,  000,  000,  000,  000,       #  01 - 05   PIECE promotion line
+const PST_P: array[52, int] =
+    [0,                                     # 0 at start
+         000,  000,  000,  000,  000,       #  01 - 05   piece promotion line
       045,  050,  055,  050,  045,          #  06 - 10
          040,  045,  050,  045,  040,       #  11 - 15
       035,  040,  045,  040,  035,          #  16 - 20
-         025,  030,  030,  025,  030,       #  21 - 25   Small threshold to prevent to optimistic behaviour
+         025,  030,  030,  025,  030,       #  21 - 25   small threshold to prevent to optimistic behaviour
       025,  030,  035,  030,  025,          #  26 - 30
          020,  015,  025,  020,  025,       #  31 - 35
       020,  015,  025,  020,  015,          #  36 - 40
@@ -97,9 +96,8 @@ const PST_P: seq[int] =
       005,  010,  015,  010,  005,          #  46 - 50
       0]                                    # 0 at end
 
-#const PST_KK: array[52, int] =    # much slower !!
-const PST_K: seq[int] =
-    @[0,                                    # 0 at start
+const PST_K: array[52, int] =
+    [0,                                     # 0 at start
          050,  050,  050,  050,  050,       #  01 - 05
       050,  050,  050,  050,  050,          #  06 - 10
          050,  050,  050,  050,  050,       #  11 - 15
@@ -112,8 +110,14 @@ const PST_K: seq[int] =
       050,  050,  050,  050,  050,          #  46 - 50
       0]                                    # 0 at end
 
-const PST = {'P': PST_P , 'K': PST_K}.toTable
-const PMAT = {'P': 1000, 'K': 3000}.toTable
+# Piece score table
+proc pst(p: char): array[52, int] =
+   if p == 'P': return PST_P else: return PST_K
+
+# Material score
+proc pmat(p: char): int =
+   if p == 'P': return 1000 else: return 3000
+
 
 ###############################################################################
 # Draughts logic
@@ -163,18 +167,18 @@ proc eval_move*(pos: Position, move: Move): int =
    let promotion_line = 1..5
    var score: int
    if (j in promotion_line) and (p != 'K'):
-      let from_val = PST[p][i] + PMAT[p]
-      let to_val = PST['K'][j] + PMAT['K']    # piece promoted to king
+      let from_val = pst(p)[i] + pmat(p)
+      let to_val = pst('K')[j] + pmat('K')    # piece promoted to king
       score = to_val - from_val
    else:
-      let from_val = PST[p][i] + PMAT[p]
-      let to_val = PST[p][j] + PMAT[p]
+      let from_val = pst(p)[i] + pmat(p)
+      let to_val = pst(p)[j] + pmat(p)
       score = to_val - from_val
 
    # Increase of score because of captured pieces
    for i, val in move.takes:
       let q = pos.board[val].toUpper
-      score += PST[q][51-val] + PMAT[q]   # score from perspective of other player
+      score += pst(q)[51-val] + pmat(q)   # score from perspective of other player
    return score
 
 
@@ -183,13 +187,13 @@ proc eval_pos*(pos: Position): int  {.inline.} =
    var score1: int = 0
    for i, p in pos.board:
       if p.isUpper:         # p == 'P' or p == 'K'
-         score1 = score1 + PMAT[p] + PST[p][i]
+         score1 = score1 + pmat(p) + pst(p)[i]
 
    let rotBoard = pos.board.rotateBoard   # we want score of opponent
    var score2: int = 0
    for i, p in rotBoard:
       if p.isUpper:         # p == 'P' or p == 'K'
-         score2 = score2 + PMAT[p] + PST[p][i]
+         score2 = score2 + pmat(p) + pst(p)[i]
 
    let score: int = score1 - score2
    ##echo("Total score: ", score, score1, score2)
