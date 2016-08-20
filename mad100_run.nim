@@ -12,7 +12,8 @@ import times, os
 from mad100_search
    import search, search_pvf, search_ab, book_readFile, clearSearchTables, MATE_VALUE, tp, tpf, tpab
 from mad100
-   import Position, domove, INITIAL_EXT, INITIAL_EXT_TEST, INITIAL_EXT_PROBLEM1, newPos
+   import Position, domove, newPos,
+          INITIAL_EXT, INITIAL_EXT_TEST, INITIAL_EXT_TEST2, INITIAL_EXT_PROBLEM1
 from mad100_moves
    import genMoves, hasCapture, moveTableSize, clearMoveTable, matchMove, isLegal
 from mad100_play
@@ -66,13 +67,13 @@ proc main(): void =
       elif comm.startsWith "new":
          # Setup new position
          var board: string
-         let b = 0  # TEST different positions
-         if b == 0:
+         if comm.split.len == 1:
             board = INITIAL_EXT
-         elif b == 1:
-            board = INITIAL_EXT_TEST
-         elif b == 2:
-            board = INITIAL_EXT_PROBLEM1   # test problem solving 1
+         elif comm.split.len == 2:
+            let choice = comm.split[1].parseInt
+            if choice == 1: board = INITIAL_EXT_TEST
+            if choice == 2: board = INITIAL_EXT_TEST2
+            if choice == 3: board = INITIAL_EXT_PROBLEM1   # test problem solving
 
          pos = newPos(board)
          color = WHITE            # WHITE / BLACK
