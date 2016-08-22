@@ -222,8 +222,8 @@ proc main(): void =
          elif comm.split.len == 2:
             var smove = comm.split[1]
             smove = smove.strip
-            let m1 = smove.match(peg"^([0-5]?[0-9][-][0-5]?[0-9])$")   # move
-            let m2 = smove.match(peg"^([0-5]?[0-9]([x][0-5]?[0-9])+)$")   # capture
+            let m1 = smove.match(peg"^([0-9]+[-][0-9]+)$")      # move
+            let m2 = smove.match(peg"^([0-9]+([x][0-9]+)+)$")   # capture
             if m1 or m2:
                let steps = mparse_move(color, smove)
                let lmove = matchMove(pos.board, steps)
